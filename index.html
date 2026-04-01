@@ -1,1 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Lingua - Neon Slots</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Teko:wght@400;600&display=swap');
 
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #07050f;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #160a21 0%, #07050f 100%),
+                linear-gradient(0deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            color: #fff;
+            overflow-y: auto;
+        }
+
+        /* --- LOBBY STYLES --- */
+        #lobby-view {
+            text-align: center;
+            width: 100%;
+            max-width: 1100px;
+            padding: 40px 20px;
+        }
+
+        .arcade-title {
+            font-family: 'Teko', sans-serif;
+            color: #fff;
+            font-size: 72px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff, 0 0 40px #ff00e6;
+            letter-spacing: 6px;
+        }
+
+        .lobby-controls { margin-bottom: 40px; }
+
+        #reset-btn {
+            background: transparent; color: #ff00e6; border: 1px solid #ff00e6;
+            padding: 10px 25px; font-family: 'Rajdhani', sans-serif; font-size: 18px;
+            font-weight: bold; border-radius: 4px; cursor: pointer;
+            transition: all 0.2s; text-transform: uppercase; letter-spacing: 2px;
+            box-shadow: inset 0 0 10px rgba(255, 0, 230, 0.2);
+        }
+        #reset-btn:hover { background: rgba(255, 0, 230, 0.1); box-shadow: 0 0 15px #ff00e6; }
+
+        .machine-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 25px; 
+        }
+
+        .machine-card {
+            background: rgba(11, 9, 20, 0.8);
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 12px; padding: 25px 15px;
+            cursor: pointer; transition: all 0.3s; display: flex;
+            flex-direction: column; align-items: center; min-height: 200px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .machine-card::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.2), transparent);
+            transform: skewX(-20deg); transition: 0.5s;
+        }
+
+        .machine-card:hover::before { left: 200%; }
+
+        .machine-card:hover { 
+            transform: translateY(-8px); 
+            border-color: #00f3ff; 
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4), inset 0 0 15px rgba(0, 243, 255, 0.2); 
+        }
+        
+        .machine-card h2 { 
+            font-family: 'Teko', sans-serif; color: #00f3ff; font-size: 32px; 
+            margin-bottom: 10px; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0, 243, 255, 0.5);
+        }
+
+        .completion-badge {
+            display: none; background: rgba(0, 0, 0, 0.8); border: 1px solid #ff00e6;
+            border-radius: 6px; padding: 10px; width: 90%; text-align: center; margin-top: auto;
+            box-shadow: 0 0 10px rgba(255, 0, 230, 0.2);
+        }
+        .completion-badge.visible { display: block; animation: popIn 0.5s; }
+        .final-score { color: #ffe600; font-size: 18px; font-weight: bold; display: block; }
+        .final-percent { color: #00f3ff; font-size: 16px; display: block; font-weight: bold; }
+
+        /* --- GAME STYLES --- */
+        #game-view { display: none; width: 1250px; }
+        
+        #machine-casing {
+            background: rgba(11, 9, 20, 0.95);
+            border: 3px solid #00f3ff; border-radius: 16px; padding: 40px;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2), inset 0 0 30px rgba(255, 0, 230, 0.1);
+            position: relative;
+        }
+
+        #header { text-align: center; margin-bottom: 30px; position: relative; }
+        
+        #back-btn {
+            position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+            background: transparent; border: 1px solid #ff00e6; color: #ff00e6;
+            padding: 10px 20px; border-radius: 4px; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: bold; text-transform: uppercase;
+            box-shadow: inset 0 0 10px rgba(255, 0, 230, 0.2); transition: 0.2s;
+        }
+        #back-btn:hover { background: rgba(255, 0, 230, 0.1); box-shadow: 0 0 15px #ff00e6; }
+        
+        #game-title { 
+            font-family: 'Teko', sans-serif; color: #fff; font-size: 56px; 
+            letter-spacing: 6px; text-shadow: 0 0 15px #00f3ff; margin: 0;
+        }
+
+        #reel-window {
+            background: #030205; border: 2px solid #ff00e6; border-radius: 8px;
+            height: 400px; /* High height for long texts */
+            position: relative; overflow: hidden; margin-bottom: 30px;
+            box-shadow: inset 0 0 60px rgba(255, 0, 230, 0.15);
+        }
+
+        #reel-strip { position: absolute; top: 0; left: 0; width: 100%; display: flex; flex-direction: column; }
+
+        .sentence-item {
+            height: 400px; /* Matches reel-window */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px 80px; box-sizing: border-box; text-align: center;
+        }
+
+        .turkish-text { 
+            color: #00f3ff; font-size: 46px; font-weight: bold; line-height: 1.3; margin: 0; 
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.6); 
+        }
+        .english-text { 
+            color: #ff00e6; font-size: 42px; margin-top: 20px; font-weight: bold; 
+            display: none; line-height: 1.3; text-shadow: 0 0 15px rgba(255, 0, 230, 0.8); 
+        }
+
+        /* DASHBOARD METERS */
+        #meters { 
+            display: flex; justify-content: center; gap: 40px; 
+            background: rgba(0, 0, 0, 0.6); border: 1px solid #00f3ff; 
+            border-radius: 8px; padding: 20px; margin-bottom: 30px; 
+        }
+        .meter { text-align: center; min-width: 280px; }
+        .meter-title { font-family: 'Rajdhani', sans-serif; font-size: 18px; color: #00f3ff; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; }
+        .meter-val { font-size: 64px; font-weight: bold; font-family: 'Teko', sans-serif; }
+        #score-val { color: #ffe600; text-shadow: 0 0 15px rgba(255, 230, 0, 0.5); }
+        #success-val { color: #00f3ff; text-shadow: 0 0 15px rgba(0, 243, 255, 0.5); }
+        #timer-val { color: #ff00e6; text-shadow: 0 0 15px rgba(255, 0, 230, 0.5); }
+
+        #action-panel { 
+            display: flex; justify-content: center; gap: 40px; align-items: center; 
+            padding: 25px; background: rgba(0,0,0,0.5); border-radius: 12px; 
+            min-height: 80px; border: 1px solid rgba(255, 0, 230, 0.3); margin-bottom: 20px;
+        }
+
+        .action-btn { 
+            background: transparent; border-radius: 8px; font-size: 24px; 
+            font-family: 'Rajdhani', sans-serif; padding: 15px 45px; cursor: pointer; 
+            font-weight: bold; display: none; text-transform: uppercase; letter-spacing: 2px; transition: 0.1s; 
+        }
+        .action-btn:active { transform: scale(0.95); }
+        
+        #btn-hint { color: #00f3ff; border: 2px solid #00f3ff; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
+        #btn-tick { color: #39FF14; border: 2px solid #39FF14; box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
+        #btn-cross { color: #ff1744; border: 2px solid #ff1744; box-shadow: 0 0 15px rgba(255, 23, 68, 0.3); }
+
+        #controls { display: flex; justify-content: center; align-items: center; position: relative; min-height: 100px; }
+
+        #spin-btn {
+            background: rgba(0, 243, 255, 0.1); border: 2px solid #00f3ff; border-radius: 8px; color: #00f3ff;
+            font-family: 'Teko', sans-serif; font-size: 56px; font-weight: 600; padding: 10px 150px;
+            cursor: pointer; box-shadow: 0 0 30px rgba(0, 243, 255, 0.3), inset 0 0 15px rgba(0, 243, 255, 0.2); 
+            text-transform: uppercase; letter-spacing: 6px; transition: 0.2s;
+        }
+        #spin-btn:hover { background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 40px rgba(0, 243, 255, 0.6); }
+        #spin-btn:disabled { display: none; }
+
+        #finish-btn { 
+            display: none; background: rgba(255, 230, 0, 0.1); border: 2px solid #ffe600; 
+            border-radius: 8px; color: #ffe600; font-family: 'Teko', sans-serif; font-size: 48px; 
+            padding: 10px 100px; text-transform: uppercase; cursor: pointer; 
+            box-shadow: 0 0 30px rgba(255, 230, 0, 0.3);
+        }
+
+        #custom-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            background: #0b0914; border: 2px solid #ff00e6; border-radius: 16px; padding: 60px; text-align: center; max-width: 600px; box-shadow: 0 0 60px rgba(255, 0, 230, 0.4);
+        }
+        .modal-content p { color: #fff; font-size: 32px; margin-bottom: 45px; line-height: 1.4; }
+        .modal-btn {
+            background: transparent; color: #00f3ff; border: 2px solid #00f3ff; padding: 15px 50px; font-size: 28px; font-family: 'Teko', sans-serif; border-radius: 6px; cursor: pointer; letter-spacing: 2px; box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <button id="back-btn" onclick="returnToLobby()">◀ LOBBY</button>
+
+    <div id="lobby-view">
+        <h1 class="arcade-title">CYBER LINGUA ARCADE</h1>
+        <div class="lobby-controls"><button id="reset-btn" onclick="resetProgress()">Sistemi Sıfırla</button></div>
+        <div class="machine-grid" id="studio-grid">
+            </div>
+    </div>
+
+    <div id="game-view">
+        <div id="machine-casing">
+            <div id="header"><h1 id="game-title">NEON SLOTS</h1></div>
+            
+            <div id="reel-window"><div id="reel-strip"></div></div>
+            
+            <div id="meters">
+                <div class="meter"><div class="meter-title">CREDITS</div><div class="meter-val" id="score-val">0</div></div>
+                <div class="meter"><div class="meter-title">ACCURACY</div><div class="meter-val" id="success-val">0%</div></div>
+                <div class="meter"><div class="meter-title">TIME BONUS</div><div class="meter-val" id="timer-val">10</div></div>
+            </div>
+
+            <div id="action-panel">
+                <button id="btn-tick" class="action-btn" onclick="handleAnswer(true)">✅ HACKED (I got it)</button>
+                <button id="btn-hint" class="action-btn" onclick="showHint()">DECRYPT (Check Answer)</button>
+                <button id="btn-cross" class="action-btn" onclick="handleAnswer(false)">❌ FAILED</button>
+            </div>
+            
+            <div id="controls">
+                <button id="spin-btn" onclick="spinMachine()">INITIATE SPIN</button>
+                <button id="finish-btn" onclick="returnToLobby()">SAVE & EXIT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-modal">
+        <div class="modal-content">
+            <h1 id="modal-title" style="color:#ff00e6; font-family:'Teko'; font-size: 64px; margin:0 0 20px 0;">SYSTEM SCAN COMPLETE</h1>
+            <p id="modal-msg" style="font-size: 26px;"></p>
+            <button id="modal-btn" class="modal-btn" onclick="modalAction()"></button>
+        </div>
+    </div>
+
+    <script>
+        const rawData = [
+            // SET 1
+            { tr: "Ya çay içebiliriz ya da kahve.", en: "We can either drink tea or coffee." },
+            { tr: "Arabayı bir şekilde tamir etti.", en: "He somehow fixed the car." },
+            { tr: "Beni kasten görmezden geldi.", en: "She ignored me on purpose (intentionally, deliberately)." },
+            { tr: "Kapıyı çalmadan odaya girdi.", en: "He entered the room without knocking." },
+            { tr: "Artık uyuma vakti.", en: "Now it is time to sleep." },
+            { tr: "Hiç İtalya'ya gittin mi?", en: "Did you ever go to Italy?" },
+            { tr: "Gerçekten başka hiçbir şey söylemedi.", en: "He told nothing but the truth." },
+            { tr: "Bu kutu diğeri kadar ağır.", en: "This box is as heavy as the other one." },
+            { tr: "Karşılık olarak ona yardım ettim.", en: "I helped him in return." },
+            { tr: "Hem İngilizce hem de Almanca konuşuyor.", en: "She speaks both English and German." },
+            { tr: "Tesadüfen aynı uçaktaydık.", en: "We coincidentally (by chance) were on the same plane." },
+            { tr: "Planına bir dereceye kadar katılıyorum.", en: "I agree with your plan to some extent." },
+            { tr: "Yorgun olsam bile antrenmana gideceğim.", en: "I will go to training even if I am tired." },
+            { tr: "Çok çalıştı; sonuç olarak sınavı geçti.", en: "She studied hard; consequently (as a result), she passed the exam." },
+            { tr: "O yüzemez, ben de yüzemem.", en: "He cannot swim, and neither can I." },
+            { tr: "Şirket adına özür dilerim.", en: "I apologize on behalf of the company." },
+            // SET 2
+            { tr: "Hayalet görmüş gibi görünüyordu.", en: "He looked as if he saw a ghost." },
+            { tr: "Onu son zamanlarda aramadım.", en: "I didn't call him recently (currently, lately)." },
+            { tr: "Acil bir durumda bu düğmeye basın.", en: "Press this button in case of an emergency." },
+            { tr: "Öğretmene göre sınav zor olacak.", en: "According to the teacher, the exam will be hard." },
+            { tr: "Projeyi göz önünde bulundurarak seni aradım.", en: "I called you regarding the project." },
+            { tr: "Sen odayı temizle; bu esnada ben alışveriş yapacağım.", en: "You clean the room; in the meantime (meanwhile), I will do the shopping." },
+            { tr: "Bu telefon kamera açısından harika.", en: "This phone is great in terms of the camera." },
+            { tr: "Köpekler kedilere kıyasla daha gürültülüdür.", en: "Dogs are noisy compared to cats." },
+            { tr: "Ülkeyi temelli terk etti.", en: "He left the country for good." },
+            { tr: "Aslına bakarsan o haklıydı.", en: "As a matter of fact (in fact, actually), she was right." },
+            { tr: "O kadar yorgundu ki hemen uyudu.", en: "He was so tired that he slept immediately." },
+            { tr: "Maalesef biletler tükendi.", en: "Unfortunately, the tickets sold out." },
+            { tr: "Keşke daha fazla zamanım olsaydı!", en: "If only I had more time!" },
+            { tr: "Otobüse binmek yerine yürüdük.", en: "We walked instead of taking the bus." },
+            { tr: "Bu şekilde daha çok para biriktirebiliriz.", en: "In this way, we can save more money." },
+            { tr: "Ailesinin uğruna işini değiştirdi.", en: "He changed his job for the sake of his family." },
+            // SET 3
+            { tr: "Kararım gerçeklere dayanıyor.", en: "My decision is based on the facts." },
+            { tr: "Başarımız takım çalışmasına bağlı.", en: "Our success depends on teamwork." },
+            { tr: "Haberi radyo aracılığıyla duydum.", en: "I heard the news via (through) the radio." },
+            { tr: "Lütfen beni sonuçlardan an ve an haberdar et.", en: "Please keep me posted on the results." },
+            { tr: "Birinci ve ikinci ödüller Ahmet ve Mehmet'e gitti, sırasıyla.", en: "The first and second prizes went to Ahmet and Mehmet, respectively." },
+            { tr: "Sırrı söylemem bir dil sürçmesiydi.", en: "Telling the secret was a slip of the tongue." },
+            { tr: "İşte o noktada tecrübe devreye giriyor.", en: "That's where experience comes in." },
+            { tr: "Şu andan itibaren daha dikkatli olacağım.", en: "From now on, I will be more careful." },
+            { tr: "Çay ve kahve severim ama ilkini ikincisine tercih ederim.", en: "I like tea and coffee, but I prefer the former over the latter." },
+            { tr: "Artık mezun olduğuna göre iş bulabilirsin.", en: "Now that you graduated, you can find a job." },
+            { tr: "O kitabı zaten okudum.", en: "I already read that book." },
+            { tr: "Bu araba hızlı; üstelik çok güvenli.", en: "This car is fast; moreover (what's more, furthermore, in addition, besides), it is very safe." },
+            { tr: "Mademki yorgunsun, dinlenmelisin.", en: "Seeing that you are tired, you should rest." },
+            { tr: "Onun yalan söylediğini kim tahmin ederdi?", en: "Who would guess (know) he lied?" },
+            { tr: "Senin tavsiyen sayesinde başardım.", en: "I succeeded thanks to your advice." },
+            { tr: "Yarın yağmur yağma ihtimali yüksek.", en: "It is likely to rain tomorrow." },
+            // SET 4
+            { tr: "Bir mühendis olarak çalışıyorum.", en: "I work as an engineer." },
+            { tr: "Kızgın değilim; bilakis seni anlıyorum.", en: "I am not angry; on the contrary, I understand you." },
+            { tr: "Meğerse kapı kilitli değilmiş.", en: "It turns out that the door was not locked." },
+            { tr: "Cevap dilimin ucunda.", en: "The answer is on the tip of my tongue." },
+            { tr: "Fikrini değiştirebilirsin, yani darılmaca yok.", en: "You can change your mind, so no hard feelings." },
+            { tr: "Bırak araba almayı, bisiklet bile alamam.", en: "Let alone buy a car, I can't even buy a bike." },
+            { tr: "Bildiğim kadarıyla Deniz Dora 11 yaşında.", en: "As far as I know, Deniz Dora is 11 years old." },
+            { tr: "Spor yapmak kalbin için faydalı.", en: "Doing sports is good for your heart." },
+            { tr: "O kadar komik bir fıkraydı ki herkes güldü.", en: "It was such a funny joke that everybody laughed." },
+            { tr: "Öyle ya da böyle bu projeyi bitireceğiz.", en: "This way or that way, we will finish this project." },
+            { tr: "Lütfen toplantıdan öncesine kadar raporu gönderin.", en: "Please send the report prior to the meeting." },
+            { tr: "İlk bakışta ev boş görünüyordu.", en: "At first glance, the house looked empty." },
+            { tr: "Zamanla acın hafifleyecek.", en: "In the course of time, your pain will lessen." },
+            { tr: "Görüldüğü üzere haklıydım.", en: "I was right, as it seems." },
+            { tr: "Ağlamanın eşiğindeydi.", en: "She was on the verge of (brink of) crying." },
+            { tr: "Kısacası harika bir tatildi.", en: "In a nutshell (briefly), it was a great holiday." },
+            // SET 5
+            { tr: "Kararımın seninle hiçbir ilgisi yok.", en: "My decision has nothing to do with you." },
+            { tr: "Nereye gittiğimiz fark etmez.", en: "It doesn't matter where we go." },
+            { tr: "Otelde kalmaktan ziyade kamp yapacağız.", en: "We will camp rather than stay in a hotel." },
+            { tr: "Hırsız kaşla göz arasında kaçtı.", en: "The thief escaped in the blink of an eye." },
+            { tr: "Bunun üzerine polis geldi.", en: "Upon this, the police arrived." },
+            { tr: "Kendi mutluluğu pahasına onlara yardım etti.", en: "He helped them in expense of his own happiness." },
+            { tr: "Ödevimi henüz bitirmedim.", en: "I didn't finish my homework yet." },
+            { tr: "Artık et yemiyorum.", en: "I don't eat meat anymore." },
+            { tr: "Ne olursa olsun pes etme.", en: "Whatever (no matter what) happens, don't give up." },
+            { tr: "Tıpkı annesi gibi güzel.", en: "She is beautiful just like her mother." },
+            { tr: "Bu arada, saat kaç?", en: "By the way, what time is it?" },
+            { tr: "O sadece yetenekli değil, aynı zamanda çalışkan.", en: "He is not only talented but also hardworking." },
+            { tr: "Ne kadar çok çalışırsan o kadar çok kazanırsın.", en: "The more you work, the more you earn." },
+            { tr: "Ne kadar erken, o kadar iyi.", en: "The earlier, the better." },
+            { tr: "Ne İngilizce ne de Fransızca anlıyor.", en: "He understands neither English nor French." },
+            { tr: "Kuralların değiştiğini aklında tut.", en: "Keep in mind that the rules changed." },
+            // SET 6
+            { tr: "O zamanlar öğrenciydim.", en: "I was a student then." },
+            { tr: "Kediler köpekleri sevmez ya da tam tersi.", en: "Cats don't like dogs, or vice versa (the other way around)." },
+            { tr: "Derhal buraya gel!", en: "Come here at once (immediately)!" },
+            { tr: "O çikolata sever, ben de.", en: "He loves chocolate, and so do I." },
+            { tr: "Uyanır uyanmaz bana mesaj at.", en: "Text me as soon as you wake up." },
+            { tr: "Elektrikler kesilir diye el fenerini al.", en: "Take the flashlight in case the power goes out." },
+            { tr: "Geç kaldım; bu yüzden özür dilerim.", en: "I was late; therefore (that's why), I apologize." },
+            { tr: "Kaderin bir cilvesi, aynı şirkette işe başladık.", en: "By a twist of fate, we started working at the same company." },
+            { tr: "Spor yapmak uzun vadede faydalıdır.", en: "Exercising is beneficial in the long term." },
+            { tr: "Katiyen umurumda değil.", en: "I don't care at all." },
+            { tr: "Söylentiye göre istifa etmiş.", en: "Rumour has it that he resigned." },
+            { tr: "Üzgün olduğu çok bariz.", en: "It is obvious that she is sad." },
+            { tr: "Yaşını göz önünde bulundurmaksızın onu işe aldılar.", en: "They hired him regardless of his age." },
+            { tr: "İşin en başında bu arabayı almamalıydık.", en: "We shouldn't have bought this car in the first place." },
+            { tr: "Karar verdiğinde bana haber ver.", en: "Let me know when you decide." },
+            { tr: "Daha önce dediğim gibi, bu çok tehlikeli.", en: "As I said before, this is very dangerous." },
+            // SET 7
+            { tr: "Kitabı okuduktan sonra geri verdim.", en: "Having read the book, I returned it." },
+            { tr: "Adından da anlaşılacağı gibi, karpuz suludur.", en: "As the name suggests, watermelon is juicy." },
+            { tr: "Bu trafikten bıktım.", en: "I am fed up with this traffic." },
+            { tr: "Kardeşim de bizimle gelecek.", en: "My brother will come with us as well." },
+            { tr: "Alınma ama şapkan komik görünüyor.", en: "No offense, but your hat looks funny." },
+            { tr: "Pencereyi açmamın bir sakıncası var mı?", en: "Do you mind if I open the window?" },
+            { tr: "Son çare olarak arabayı satacağız.", en: "We will sell the car as a last resort." },
+            { tr: "Fırtına damdan düşercesine koptu.", en: "The storm hit out of the blue." },
+            { tr: "Kovuldum; başka bir deyişle işsizim.", en: "I was fired; in other words, I am jobless." },
+            { tr: "Bana yalan söylemesi bardağı taşıran son damlaydı.", en: "His lying to me was the tipping point." },
+            { tr: "Lütfen oteli peşinen ödeyin.", en: "Please pay the hotel in advance." },
+            { tr: "En azından denedik.", en: "We tried, at least." },
+            { tr: "Şöhret harika ama madalyonun diğer yüzü de var.", en: "Fame is great, but the coin has a flipside." },
+            { tr: "Tehlikeli olduğunu bilseydim atlamazdım.", en: "Had I known it was dangerous, I wouldn't have jumped." },
+            { tr: "Bana doğruyu söylediğin müddetçe sorun yok.", en: "It is fine as long as you tell me the truth." },
+            { tr: "Beni yanlış anlama, sadece yardım etmek istiyorum.", en: "Don't get me wrong, I just want to help." },
+            // SET 8
+            { tr: "Film başlamak üzere.", en: "The movie is about to start." },
+            { tr: "Allah'tan cüzdanımı buldum.", en: "Fortunately, I found my wallet." },
+            { tr: "Okula yürümek yirmi dakikamı alıyor.", en: "It takes me twenty minutes to walk to school." },
+            { tr: "Şehir kalabalık; öte yandan çok eğlenceli.", en: "The city is crowded; on the other hand, it is very fun." },
+            { tr: "Ben matematik sevmem ve aynı şey kardeşim için de geçerli.", en: "I don't like math, and the same goes for my brother." },
+            { tr: "Benim aksime o çok sabırlı.", en: "Unlike me, she is very patient." },
+            { tr: "Özür dilemedikçe seni affetmeyeceğim.", en: "I will not forgive you unless you apologize." },
+            { tr: "Hava güneşliydi ama yine de rüzgarlıydı.", en: "The weather was sunny, yet it was windy." },
+            { tr: "Yoksulluk ve cehalet bir kısır döngü yaratır.", en: "Poverty and ignorance create a vicious circle." },
+            { tr: "Ortalama olarak haftada bir kitap okur.", en: "On average, he reads one book a week." },
+            { tr: "Raporun ışığında yeni kurallar koyduk.", en: "Under the light of the report, we set new rules." },
+            { tr: "Eninde sonunda gerçeği öğrenecekler.", en: "They will eventually learn the truth." },
+            { tr: "Cumartesi veya pazar, aynı hesap.", en: "Saturday or Sunday; same difference." },
+            { tr: "Kırk yılda bir sinemaya gideriz.", en: "We go to the cinema once in a while (every now and then)." },
+            { tr: "Sözüm ona çok meşguldü.", en: "He was very busy, so to say." },
+            { tr: "Erkek kardeşim iyi yüzüyor; benzer şekilde kız kardeşim de.", en: "My brother swims well; similarly (likewise), my sister does too." }
+        ];
+
+        let currentShuffledSet = [], retryPool = [], currentIdx = 0, score = 0, corrects = 0, totalAtts = 0, phase = 1, gameId = "";
+        let isSpinning = false, countdown, timerVal = 10;
+        const itemHeight = 400; // Matches the CSS height of .sentence-item
+
+        const STORAGE_KEY = "cyberSlotProgress";
+
+        function createLobby() {
+            const grid = document.getElementById('studio-grid');
+            grid.innerHTML = ''; 
+            for(let i=1; i<=8; i++) {
+                grid.innerHTML += `
+                    <div class="machine-card" onclick="startStudio('g${i}')">
+                        <h2>NODE 0${i}</h2>
+                        <div id="badge-g${i}" class="completion-badge">
+                            <span class="final-percent">ACCURACY: <span id="percent-g${i}">0</span>%</span>
+                            <span class="final-score">CREDITS: <span id="score-g${i}">0</span></span>
+                        </div>
+                    </div>
+                `;
+            }
+            updateLobby();
+        }
+
+        function updateLobby() {
+            const progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            for(let i=1; i<=8; i++) {
+                const id = 'g'+i;
+                const badge = document.getElementById('badge-'+id);
+                if(progress[id] && badge) {
+                    badge.classList.add('visible');
+                    document.getElementById('score-'+id).innerText = progress[id].score;
+                    document.getElementById('percent-'+id).innerText = progress[id].percent;
+                }
+            }
+        }
+
+        function startStudio(id) {
+            gameId = id;
+            const studioNum = parseInt(id.slice(1));
+            const start = (studioNum - 1) * 16;
+            const originalSet = rawData.slice(start, start + 16);
+            
+            // Randomization Engine
+            currentShuffledSet = [...originalSet].sort(() => Math.random() - 0.5);
+            
+            retryPool = []; currentIdx = 0; score = 0; corrects = 0; totalAtts = 0; phase = 1;
+            document.getElementById('lobby-view').style.display = 'none';
+            document.getElementById('game-view').style.display = 'block';
+            
+            document.getElementById('score-val').innerText = "0";
+            document.getElementById('success-val').innerText = "0%";
+            document.getElementById('timer-val').innerText = "10";
+            
+            document.getElementById('spin-btn').style.display = 'block';
+            document.getElementById('spin-btn').disabled = false;
+            document.getElementById('finish-btn').style.display = 'none';
+            document.getElementById('action-panel').style.display = 'none';
+            
+            const reelStrip = document.getElementById('reel-strip');
+            reelStrip.innerHTML = `<div class="sentence-item"><span class="turkish-text" style="color:#ff00e6">SYSTEM READY.<br>INITIATE SPIN.</span></div>`;
+            reelStrip.style.transform = `translateY(0px)`;
+        }
+
+        function spinMachine() {
+            if (isSpinning) return;
+            const pool = phase === 1 ? currentShuffledSet : retryPool;
+            
+            if (currentIdx >= pool.length) {
+                if (phase === 1 && retryPool.length > 0) {
+                    showModal("CORRUPTION DETECTED", "Main sequence complete. Initiating decryption for failed protocols. No credits awarded.", "PROCEED");
+                    return;
+                } else if (phase === 2 && retryPool.length > 0) {
+                    currentIdx = 0; // Loop retry pool
+                    spinMachine();
+                    return;
+                } else {
+                    finishGame();
+                    return;
+                }
+            }
+
+            isSpinning = true;
+            document.getElementById('spin-btn').style.display = 'none';
+            document.getElementById('action-panel').style.display = 'none';
+            clearInterval(countdown);
+
+            const targetData = pool[currentIdx];
+            const totalItemsInSpin = 20; 
+            const reelStrip = document.getElementById('reel-strip');
+            
+            reelStrip.innerHTML = ''; 
+            reelStrip.style.transition = 'none'; 
+            reelStrip.style.transform = `translateY(0px)`;
+
+            for (let i = 0; i < totalItemsInSpin; i++) {
+                const div = document.createElement('div'); div.className = 'sentence-item';
+                if (i === totalItemsInSpin - 1) { 
+                    div.innerHTML = `<span class="turkish-text">${targetData.tr}</span><span class="english-text" id="active-english">${targetData.en}</span>`; 
+                } else { 
+                    const randomPhrase = pool[Math.floor(Math.random() * pool.length)].tr;
+                    div.innerHTML = `<span class="turkish-text">${randomPhrase}</span>`; 
+                }
+                reelStrip.appendChild(div);
+            }
+            
+            void reelStrip.offsetWidth; // Trigger reflow
+            reelStrip.style.transition = 'transform 2.0s cubic-bezier(0.1, 0.1, 0.1, 1), filter 2.0s ease-out';
+            reelStrip.style.filter = 'blur(4px)'; 
+            reelStrip.style.transform = `translateY(${-(totalItemsInSpin - 1) * itemHeight}px)`;
+            
+            setTimeout(() => { reelStrip.style.filter = 'blur(0px)'; }, 1500);
+            setTimeout(() => { isSpinning = false; startActionPhase(); }, 2000); 
+        }
+
+        function startActionPhase() {
+            document.getElementById('action-panel').style.display = 'flex';
+            document.getElementById('btn-hint').style.display = 'block';
+            document.getElementById('btn-tick').style.display = 'none';
+            document.getElementById('btn-cross').style.display = 'none';
+            
+            timerVal = 10; 
+            document.getElementById('timer-val').innerText = timerVal;
+            clearInterval(countdown);
+            countdown = setInterval(() => { 
+                timerVal--; 
+                document.getElementById('timer-val').innerText = timerVal; 
+                if (timerVal <= 0) clearInterval(countdown); 
+            }, 1000);
+        }
+
+        function showHint() {
+            clearInterval(countdown); 
+            document.getElementById('active-english').style.display = 'block';
+            document.getElementById('btn-hint').style.display = 'none';
+            document.getElementById('btn-tick').style.display = 'block';
+            document.getElementById('btn-cross').style.display = 'block';
+        }
+
+        function handleAnswer(isSuccess) {
+            const pool = phase === 1 ? currentShuffledSet : retryPool;
+            const answeredItem = pool[currentIdx];
+            
+            document.getElementById('action-panel').style.display = 'none';
+
+            if (phase === 1) {
+                totalAtts++;
+                if (isSuccess) { 
+                    score += (100 + timerVal); // Speed Bonus!
+                    corrects++; 
+                } else { 
+                    retryPool.push(answeredItem); 
+                }
+                document.getElementById('score-val').innerText = score; 
+                document.getElementById('success-val').innerText = Math.round((corrects / totalAtts) * 100) + "%";
+            } 
+            
+            if (phase === 2 && isSuccess) {
+                // If correct in retry, remove it
+                retryPool.splice(currentIdx, 1);
+                // Do not increment index because array shifted
+            } else if (phase === 2 && !isSuccess) {
+                currentIdx++;
+            } else if (phase === 1) {
+                currentIdx++;
+            }
+
+            // Small delay before spinning again
+            setTimeout(() => { spinMachine(); }, 400); 
+        }
+
+        function showModal(title, msg, btnText) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('modal-btn').innerText = btnText;
+            document.getElementById('custom-modal').style.display = 'flex';
+        }
+
+        function modalAction() {
+            document.getElementById('custom-modal').style.display = 'none';
+            phase = 2; currentIdx = 0; spinMachine();
+        }
+
+        function finishGame() {
+            const perc = totalAtts > 0 ? Math.round((corrects/totalAtts)*100) : 0;
+            let progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            progress[gameId] = { score, percent: perc };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+            
+            const reelStrip = document.getElementById('reel-strip');
+            reelStrip.innerHTML = `<div class="sentence-item"><span class="turkish-text" style="color:#39FF14">NODE SECURED.<br>ALL THREATS ELIMINATED.</span></div>`;
+            document.getElementById('spin-btn').style.display = 'none';
+            document.getElementById('finish-btn').style.display = 'block';
+        }
+
+        function returnToLobby() {
+            clearInterval(countdown);
+            document.getElementById('lobby-view').style.display = 'block';
+            document.getElementById('game-view').style.display = 'none';
+            updateLobby();
+        }
+
+        function resetProgress() { 
+            if(confirm("Tüm sistem verilerini silmek istediğine emin misin?")) { 
+                localStorage.removeItem(STORAGE_KEY); location.reload(); 
+            } 
+        }
+
+        createLobby();
+    </script>
+</body>
+</html>
