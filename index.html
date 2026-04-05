@@ -112,9 +112,23 @@
             font-size: 64px;
             font-weight: 600;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff;
             letter-spacing: 4px;
+        }
+
+        /* DATA CORE SELECTOR */
+        .core-selector {
+            display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .core-btn {
+            background: rgba(11, 9, 20, 0.8); border: 2px solid #3d5afe; color: #3d5afe;
+            padding: 8px 30px; font-family: 'Teko', sans-serif; font-size: 28px;
+            border-radius: 8px; cursor: pointer; letter-spacing: 2px; transition: 0.2s;
+        }
+        .core-btn.active {
+            background: rgba(0, 243, 255, 0.15); border-color: #00f3ff; color: #00f3ff;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
         }
 
         .lobby-controls { margin-bottom: 30px; }
@@ -128,7 +142,6 @@
 
         .studio-grid { 
             display: grid; 
-            /* Fluid Grid: Will automatically create columns based on available width */
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
             gap: 15px; 
         }
@@ -232,7 +245,7 @@
             background: transparent; border-radius: 8px; font-size: 22px; 
             padding: 12px 30px; cursor: pointer; font-weight: bold; 
             display: none; text-transform: uppercase; letter-spacing: 1px; transition: 0.1s; 
-            flex: 1 1 250px; /* Allows buttons to stretch on mobile */
+            flex: 1 1 250px; 
             text-align: center;
         }
         .action-btn:active { transform: scale(0.95); }
@@ -291,6 +304,7 @@
             .action-btn { font-size: 18px; padding: 10px 20px; }
             
             #modal-title { font-size: 42px !important; }
+            .core-btn { font-size: 20px; padding: 6px 15px; }
         }
     </style>
 </head>
@@ -309,7 +323,13 @@
 
     <div id="lobby-view">
         <h1 class="arcade-title">NEON TERMINALS</h1>
-        <div class="lobby-controls"><button id="reset-btn" onclick="resetProgress()">CLEAR DATA</button></div>
+        
+        <div class="core-selector">
+            <button id="core-alpha-btn" class="core-btn active" onclick="switchCore('alpha')">[ CORE: ALPHA ]</button>
+            <button id="core-beta-btn" class="core-btn" onclick="switchCore('beta')">[ CORE: BETA ]</button>
+        </div>
+
+        <div class="lobby-controls"><button id="reset-btn" onclick="resetProgress()">CLEAR CORE DATA</button></div>
         <div class="studio-grid" id="studio-grid">
             </div>
     </div>
@@ -362,145 +382,272 @@
             createLobby();
         }
 
-        const rawData = [
-            // SET 1
-            { tr: "Ya çay içebiliriz ya da kahve.", en: "We can either drink tea or coffee." },
-            { tr: "Arabayı bir şekilde tamir etti.", en: "He somehow fixed the car." },
-            { tr: "Beni kasten görmezden geldi.", en: "She ignored me on purpose (intentionally, deliberately)." },
-            { tr: "Kapıyı çalmadan odaya girdi.", en: "He entered the room without knocking." },
-            { tr: "Artık uyuma vakti.", en: "Now it is time to sleep." },
-            { tr: "Hiç İtalya'ya gittin mi?", en: "Did you ever go to Italy?" },
-            { tr: "Gerçekten başka hiçbir şey söylemedi.", en: "He told nothing but the truth." },
-            { tr: "Bu kutu diğeri kadar ağır.", en: "This box is as heavy as the other one." },
-            { tr: "Karşılık olarak ona yardım ettim.", en: "I helped him in return." },
-            { tr: "Hem İngilizce hem de Almanca konuşuyor.", en: "She speaks both English and German." },
-            { tr: "Tesadüfen aynı uçaktaydık.", en: "We coincidentally (by chance) were on the same plane." },
-            { tr: "Planına bir dereceye kadar katılıyorum.", en: "I agree with your plan to some extent." },
-            { tr: "Yorgun olsam bile antrenmana gideceğim.", en: "I will go to training even if I am tired." },
-            { tr: "Çok çalıştı; sonuç olarak sınavı geçti.", en: "She studied hard; consequently (as a result), she passed the exam." },
-            { tr: "O yüzemez, ben de yüzemem.", en: "He cannot swim, and neither can I." },
-            { tr: "Şirket adına özür dilerim.", en: "I apologize on behalf of the company." },
-            // SET 2
-            { tr: "Hayalet görmüş gibi görünüyordu.", en: "He looked as if he saw a ghost." },
-            { tr: "Onu son zamanlarda aramadım.", en: "I didn't call him recently (currently, lately)." },
-            { tr: "Acil bir durumda bu düğmeye basın.", en: "Press this button in case of an emergency." },
-            { tr: "Öğretmene göre sınav zor olacak.", en: "According to the teacher, the exam will be hard." },
-            { tr: "Projeyi göz önünde bulundurarak seni aradım.", en: "I called you regarding the project." },
-            { tr: "Sen odayı temizle; bu esnada ben alışveriş yapacağım.", en: "You clean the room; in the meantime (meanwhile), I will do the shopping." },
-            { tr: "Bu telefon kamera açısından harika.", en: "This phone is great in terms of the camera." },
-            { tr: "Köpekler kedilere kıyasla daha gürültülüdür.", en: "Dogs are noisy compared to cats." },
-            { tr: "Ülkeyi temelli terk etti.", en: "He left the country for good." },
-            { tr: "Aslına bakarsan o haklıydı.", en: "As a matter of fact (in fact, actually), she was right." },
-            { tr: "O kadar yorgundu ki hemen uyudu.", en: "He was so tired that he slept immediately." },
-            { tr: "Maalesef biletler tükendi.", en: "Unfortunately, the tickets sold out." },
-            { tr: "Keşke daha fazla zamanım olsaydı!", en: "If only I had more time!" },
-            { tr: "Otobüse binmek yerine yürüdük.", en: "We walked instead of taking the bus." },
-            { tr: "Bu şekilde daha çok para biriktirebiliriz.", en: "In this way, we can save more money." },
-            { tr: "Ailesinin uğruna işini değiştirdi.", en: "He changed his job for the sake of his family." },
-            // SET 3
-            { tr: "Kararım gerçeklere dayanıyor.", en: "My decision is based on the facts." },
-            { tr: "Başarımız takım çalışmasına bağlı.", en: "Our success depends on teamwork." },
-            { tr: "Haberi radyo aracılığıyla duydum.", en: "I heard the news via (through) the radio." },
-            { tr: "Lütfen beni sonuçlardan an ve an haberdar et.", en: "Please keep me posted on the results." },
-            { tr: "Birinci ve ikinci ödüller Ahmet ve Mehmet'e gitti, sırasıyla.", en: "The first and second prizes went to Ahmet and Mehmet, respectively." },
-            { tr: "Sırrı söylemem bir dil sürçmesiydi.", en: "Telling the secret was a slip of the tongue." },
-            { tr: "İşte o noktada tecrübe devreye giriyor.", en: "That's where experience comes in." },
-            { tr: "Şu andan itibaren daha dikkatli olacağım.", en: "From now on, I will be more careful." },
-            { tr: "Çay ve kahve severim ama ilkini ikincisine tercih ederim.", en: "I like tea and coffee, but I prefer the former over the latter." },
-            { tr: "Artık mezun olduğuna göre iş bulabilirsin.", en: "Now that you graduated, you can find a job." },
-            { tr: "O kitabı zaten okudum.", en: "I already read that book." },
-            { tr: "Bu araba hızlı; üstelik çok güvenli.", en: "This car is fast; moreover (what's more, furthermore, in addition, besides), it is very safe." },
-            { tr: "Mademki yorgunsun, dinlenmelisin.", en: "Seeing that you are tired, you should rest." },
-            { tr: "Onun yalan söylediğini kim tahmin ederdi?", en: "Who would guess (know) he lied?" },
-            { tr: "Senin tavsiyen sayesinde başardım.", en: "I succeeded thanks to your advice." },
-            { tr: "Yarın yağmur yağma ihtimali yüksek.", en: "It is likely to rain tomorrow." },
-            // SET 4
-            { tr: "Bir mühendis olarak çalışıyorum.", en: "I work as an engineer." },
-            { tr: "Kızgın değilim; bilakis seni anlıyorum.", en: "I am not angry; on the contrary, I understand you." },
-            { tr: "Meğerse kapı kilitli değilmiş.", en: "It turns out that the door was not locked." },
-            { tr: "Cevap dilimin ucunda.", en: "The answer is on the tip of my tongue." },
-            { tr: "Fikrini değiştirebilirsin, yani darılmaca yok.", en: "You can change your mind, so no hard feelings." },
-            { tr: "Bırak araba almayı, bisiklet bile alamam.", en: "Let alone buy a car, I can't even buy a bike." },
-            { tr: "Bildiğim kadarıyla Deniz Dora 11 yaşında.", en: "As far as I know, Deniz Dora is 11 years old." },
-            { tr: "Spor yapmak kalbin için faydalı.", en: "Doing sports is good for your heart." },
-            { tr: "O kadar komik bir fıkraydı ki herkes güldü.", en: "It was such a funny joke that everybody laughed." },
-            { tr: "Öyle ya da böyle bu projeyi bitireceğiz.", en: "This way or that way, we will finish this project." },
-            { tr: "Lütfen toplantıdan öncesine kadar raporu gönderin.", en: "Please send the report prior to the meeting." },
-            { tr: "İlk bakışta ev boş görünüyordu.", en: "At first glance, the house looked empty." },
-            { tr: "Zamanla acın hafifleyecek.", en: "In the course of time, your pain will lessen." },
-            { tr: "Görüldüğü üzere haklıydım.", en: "I was right, as it seems." },
-            { tr: "Ağlamanın eşiğindeydi.", en: "She was on the verge of (brink of) crying." },
-            { tr: "Kısacası harika bir tatildi.", en: "In a nutshell (briefly), it was a great holiday." },
-            // SET 5
-            { tr: "Kararımın seninle hiçbir ilgisi yok.", en: "My decision has nothing to do with you." },
-            { tr: "Nereye gittiğimiz fark etmez.", en: "It doesn't matter where we go." },
-            { tr: "Otelde kalmaktan ziyade kamp yapacağız.", en: "We will camp rather than stay in a hotel." },
-            { tr: "Hırsız kaşla göz arasında kaçtı.", en: "The thief escaped in the blink of an eye." },
-            { tr: "Bunun üzerine polis geldi.", en: "Upon this, the police arrived." },
-            { tr: "Kendi mutluluğu pahasına onlara yardım etti.", en: "He helped them in expense of his own happiness." },
-            { tr: "Ödevimi henüz bitirmedim.", en: "I didn't finish my homework yet." },
-            { tr: "Artık et yemiyorum.", en: "I don't eat meat anymore." },
-            { tr: "Ne olursa olsun pes etme.", en: "Whatever (no matter what) happens, don't give up." },
-            { tr: "Tıpkı annesi gibi güzel.", en: "She is beautiful just like her mother." },
-            { tr: "Bu arada, saat kaç?", en: "By the way, what time is it?" },
-            { tr: "O sadece yetenekli değil, aynı zamanda çalışkan.", en: "He is not only talented but also hardworking." },
-            { tr: "Ne kadar çok çalışırsan o kadar çok kazanırsın.", en: "The more you work, the more you earn." },
-            { tr: "Ne kadar erken, o kadar iyi.", en: "The earlier, the better." },
-            { tr: "Ne İngilizce ne de Fransızca anlıyor.", en: "He understands neither English nor French." },
-            { tr: "Kuralların değiştiğini aklında tut.", en: "Keep in mind that the rules changed." },
-            // SET 6
-            { tr: "O zamanlar öğrenciydim.", en: "I was a student then." },
-            { tr: "Kediler köpekleri sevmez ya da tam tersi.", en: "Cats don't like dogs, or vice versa (the other way around)." },
-            { tr: "Derhal buraya gel!", en: "Come here at once (immediately)!" },
-            { tr: "O çikolata sever, ben de.", en: "He loves chocolate, and so do I." },
-            { tr: "Uyanır uyanmaz bana mesaj at.", en: "Text me as soon as you wake up." },
-            { tr: "Elektrikler kesilir diye el fenerini al.", en: "Take the flashlight in case the power goes out." },
-            { tr: "Geç kaldım; bu yüzden özür dilerim.", en: "I was late; therefore (that's why), I apologize." },
-            { tr: "Kaderin bir cilvesi, aynı şirkette işe başladık.", en: "By a twist of fate, we started working at the same company." },
-            { tr: "Spor yapmak uzun vadede faydalıdır.", en: "Exercising is beneficial in the long term." },
-            { tr: "Katiyen umurumda değil.", en: "I don't care at all." },
-            { tr: "Söylentiye göre istifa etmiş.", en: "Rumour has it that he resigned." },
-            { tr: "Üzgün olduğu çok bariz.", en: "It is obvious that she is sad." },
-            { tr: "Yaşını göz önünde bulundurmaksızın onu işe aldılar.", en: "They hired him regardless of his age." },
-            { tr: "İşin en başında bu arabayı almamalıydık.", en: "We shouldn't have bought this car in the first place." },
-            { tr: "Karar verdiğinde bana haber ver.", en: "Let me know when you decide." },
-            { tr: "Daha önce dediğim gibi, bu çok tehlikeli.", en: "As I said before, this is very dangerous." },
-            // SET 7
-            { tr: "Kitabı okuduktan sonra geri verdim.", en: "Having read the book, I returned it." },
-            { tr: "Adından da anlaşılacağı gibi, karpuz suludur.", en: "As the name suggests, watermelon is juicy." },
-            { tr: "Bu trafikten bıktım.", en: "I am fed up with this traffic." },
-            { tr: "Kardeşim de bizimle gelecek.", en: "My brother will come with us as well." },
-            { tr: "Alınma ama şapkan komik görünüyor.", en: "No offense, but your hat looks funny." },
-            { tr: "Pencereyi açmamın bir sakıncası var mı?", en: "Do you mind if I open the window?" },
-            { tr: "Son çare olarak arabayı satacağız.", en: "We will sell the car as a last resort." },
-            { tr: "Fırtına damdan düşercesine koptu.", en: "The storm hit out of the blue." },
-            { tr: "Kovuldum; başka bir deyişle işsizim.", en: "I was fired; in other words, I am jobless." },
-            { tr: "Bana yalan söylemesi bardağı taşıran son damlaydı.", en: "His lying to me was the tipping point." },
-            { tr: "Lütfen oteli peşinen ödeyin.", en: "Please pay the hotel in advance." },
-            { tr: "En azından denedik.", en: "We tried, at least." },
-            { tr: "Şöhret harika ama madalyonun diğer yüzü de var.", en: "Fame is great, but the coin has a flipside." },
-            { tr: "Tehlikeli olduğunu bilseydim atlamazdım.", en: "Had I known it was dangerous, I wouldn't have jumped." },
-            { tr: "Bana doğruyu söylediğin müddetçe sorun yok.", en: "It is fine as long as you tell me the truth." },
-            { tr: "Beni yanlış anlama, sadece yardım etmek istiyorum.", en: "Don't get me wrong, I just want to help." },
-            // SET 8
-            { tr: "Film başlamak üzere.", en: "The movie is about to start." },
-            { tr: "Allah'tan cüzdanımı buldum.", en: "Fortunately, I found my wallet." },
-            { tr: "Okula yürümek yirmi dakikamı alıyor.", en: "It takes me twenty minutes to walk to school." },
-            { tr: "Şehir kalabalık; öte yandan çok eğlenceli.", en: "The city is crowded; on the other hand, it is very fun." },
-            { tr: "Ben matematik sevmem ve aynı şey kardeşim için de geçerli.", en: "I don't like math, and the same goes for my brother." },
-            { tr: "Benim aksime o çok sabırlı.", en: "Unlike me, she is very patient." },
-            { tr: "Özür dilemedikçe seni affetmeyeceğim.", en: "I will not forgive you unless you apologize." },
-            { tr: "Hava güneşliydi ama yine de rüzgarlıydı.", en: "The weather was sunny, yet it was windy." },
-            { tr: "Yoksulluk ve cehalet bir kısır döngü yaratır.", en: "Poverty and ignorance create a vicious circle." },
-            { tr: "Ortalama olarak haftada bir kitap okur.", en: "On average, he reads one book a week." },
-            { tr: "Raporun ışığında yeni kurallar koyduk.", en: "Under the light of the report, we set new rules." },
-            { tr: "Eninde sonunda gerçeği öğrenecekler.", en: "They will eventually learn the truth." },
-            { tr: "Cumartesi veya pazar, aynı hesap.", en: "Saturday or Sunday; same difference." },
-            { tr: "Kırk yılda bir sinemaya gideriz.", en: "We go to the cinema once in a while (every now and then)." },
-            { tr: "Sözüm ona çok meşguldü.", en: "He was very busy, so to say." },
-            { tr: "Erkek kardeşim iyi yüzüyor; benzer şekilde kız kardeşim de.", en: "My brother swims well; similarly (likewise), my sister does too." }
-        ];
+        // THE DATABASE: Contains all Sets
+        const database = {
+            alpha: [
+                { tr: "Ya koşabilirim ya da yürüyebilirim.", en: "I can either run or walk." },
+                { tr: "Yarışı bir şekilde kazandı.", en: "He somehow won the race." },
+                { tr: "Kapıyı bilerek kilitlemedim.", en: "I didn't lock the door on purpose." },
+                { tr: "Arkasına bakmadan gitti.", en: "He left without looking back." },
+                { tr: "Artık gidip oynayalım.", en: "Now, let's go play." },
+                { tr: "Hiç timsah yedin mi?", en: "Did you ever eat crocodile?" },
+                { tr: "Sudan başka hiçbir şey içmem.", en: "I drink nothing but water." },
+                { tr: "Bu kutu taş kadar ağır.", en: "This box is as heavy as stone." },
+                { tr: "Karşılık olarak gülümsedi.", en: "He smiled in return." },
+                { tr: "Hem kırmızıyı hem de maviyi severim.", en: "I like both red and blue." },
+                { tr: "Tesadüfen karşılaştık.", en: "We met coincidentally." },
+                { tr: "Sana bir dereceye kadar katılabilirim.", en: "I can agree with you to some extent." },
+                { tr: "Yağmur yağsa bile gideceğim.", en: "I will go even if it rains." },
+                { tr: "Yağmur yağdı; sonuç olarak kaldık.", en: "It rained; consequently, we stayed." },
+                { tr: "O genç değil, ben de değilim.", en: "He is not young, and neither am I." },
+                { tr: "Takım adına konuşuyorum.", en: "I speak on behalf of the team." },
+                { tr: "Yağmur yağacakmış gibi görünüyor.", en: "It looks as if it will rain." },
+                { tr: "Onu son zamanlarda gördüm.", en: "I saw him recently." },
+                { tr: "Kar yağarsa diye mont al.", en: "Take a coat in case of snow." },
+                { tr: "Ona göre bu doğru.", en: "According to him, it is true." },
+                { tr: "Müsaitliğinizi göz önünde bulundurarak arıyorum.", en: "I am calling regarding your availability." },
+                { tr: "Sen bekle, ben bu esnada çalışacağım.", en: "You wait; in the meantime, I will work." },
+                { tr: "Hız açısından iyi.", en: "It is good in terms of speed." },
+                { tr: "Bu yemek diğer yemeğe kıyasla daha lezzetli.", en: "This food is more delicious compared to the other food." },
+                { tr: "Şehri temelli terk etti.", en: "He left the city for good." },
+                { tr: "Aslına bakarsan açım.", en: "As a matter of fact, I am hungry." },
+                { tr: "Hava o kadar soğuktu ki arabayı çalıştıramadım.", en: "It was so cold that I couldn't start the car." },
+                { tr: "Maalesef maçı kaybettik.", en: "Unfortunately, we lost the game." },
+                { tr: "Keşke cevabı bilseydim!", en: "If only I knew the answer!" },
+                { tr: "Oynamak yerine uyu.", en: "Sleep instead of playing." },
+                { tr: "Bu şekilde maçı kazandılar.", en: "In this way, they won the game." },
+                { tr: "Bunu barış uğruna yap.", en: "Do it for the sake of peace." },
+                { tr: "Bu hikaye gerçeklere dayanıyor.", en: "This story is based on true facts." },
+                { tr: "Tatilimiz maddi durumumuza bağlı.", en: "Our holiday depends on our financial situation." },
+                { tr: "Bana avukatım aracılığıyla ulaşın.", en: "Reach me via my lawyer." },
+                { tr: "Lütfen beni haberdar et.", en: "Please keep me posted." },
+                { tr: "Sırasıyla birinci ve ikinciler.", en: "They are first and second, respectively." },
+                { tr: "Sadece bir dil sürçmesiydi.", en: "It was just a slip of the tongue." },
+                { tr: "İşte o noktada para devreye giriyor.", en: "That's where money comes in." },
+                { tr: "Bundan sonra daha çok deneyeceğim.", en: "I will try harder from now on." },
+                { tr: "İlkini seviyorum, ikincisini değil.", en: "I like the former, not the latter." },
+                { tr: "Artık burada olduğuna göre başlayalım.", en: "Now that you are here, let's start." },
+                { tr: "Ben zaten yedim.", en: "I already ate." },
+                { tr: "Ucuz, üstelik iyi.", en: "It is cheap; moreover, it is good." },
+                { tr: "Mademki geç oldu, gitmeliyiz.", en: "Seeing that it is late, we must go." },
+                { tr: "Kim tahmin ederdi?", en: "Who would guess." },
+                { tr: "Senin sayende kazandık.", en: "We won thanks to you." },
+                { tr: "Bardağın kırılma ihtimali yüksek.", en: "The glass is likely to break." },
+                { tr: "Şoför olarak çalışıyor.", en: "He works as a driver." },
+                { tr: "Üzgün değilim, bilakis mutluyum.", en: "I am not sad; on the contrary, I am happy." },
+                { tr: "Meğerse o haklıymış.", en: "It turns out that he was right." },
+                { tr: "Dilimin ucunda.", en: "It is on the tip of my tongue." },
+                { tr: "Berabere kaldık, yani darılmaca yok.", en: "We tied the game, so no hard feelings." },
+                { tr: "Bırak koşmayı, yürüyemiyorum bile.", en: "I can't walk, let alone run." },
+                { tr: "Bildiğim kadarıyla evet.", en: "As far as I know, yes." },
+                { tr: "Su senin için iyidir.", en: "Water is good for you." },
+                { tr: "Pazartesi harika bir gündü.", en: "Monday was such a beautiful day." },
+                { tr: "Öyle ya da böyle yap.", en: "Do it this way or that way." },
+                { tr: "Yemekten öncesine kadar su içmemelisin.", en: "You shouldn't drink water until half an hour prior to eating." },
+                { tr: "İlk bakışta iyi görünüyordu.", en: "At first glance, it looked fine." },
+                { tr: "Zamanla öğreneceksin.", en: "You will learn in the course of time." },
+                { tr: "Görüldüğü üzere kızgın.", en: "He is angry, as it seems." },
+                { tr: "İflasın eşiğinde.", en: "He is on the verge of bankruptcy." },
+                { tr: "Kısacası, biz kazandık.", en: "In a nutshell, we won." },
+                { tr: "Bunun benimle hiçbir ilgisi yok.", en: "It has nothing to do with me." },
+                { tr: "Fark etmez.", en: "It doesn't matter." },
+                { tr: "Kahve yerine çay istiyorum.", en: "I want tea rather than coffee." },
+                { tr: "Kaşla göz arasında oldu.", en: "It happened in the blink of an eye." },
+                { tr: "Bunun üzerine odadan çıktı.", en: "Upon this, he left the room." },
+                { tr: "Canı pahasına yalan söylemedi.", en: "He didn't lie in cost of his life." },
+                { tr: "O henüz burada değil.", en: "He is not here yet." },
+                { tr: "Artık aç değilim.", en: "I am not hungry anymore." },
+                { tr: "Ne yaparsan yap, güvende ol.", en: "Whatever you do, be safe." },
+                { tr: "Tıpkı bir kuşa benziyor.", en: "It looks just like a bird." },
+                { tr: "Bu arada, merhaba.", en: "By the way, hello." },
+                { tr: "Sadece hızlı değil, aynı zamanda güçlü.", en: "He is not only fast but also strong." },
+                { tr: "Ne kadar çok okursan o kadar çok öğrenirsin.", en: "The more you read, the more you learn." },
+                { tr: "Hızlı at daha pahalıdır.", en: "The faster a horse is, the more expensive it is." },
+                { tr: "Ne bunu istiyorum ne de onu.", en: "I want neither this nor that." },
+                { tr: "Kuralları aklında tut.", en: "Keep in mind the rules." },
+                { tr: "O zamanlar fakirdik.", en: "We were poor then." },
+                { tr: "Bileti ben alırım ya da tam tersi.", en: "I buy the ticket and you pay for the food, or vice versa." },
+                { tr: "Derhal koşmayı bırak.", en: "Stop running at once." },
+                { tr: "O tenis oynar, ben de oynarım.", en: "He plays tennis, and so do I." },
+                { tr: "En kısa sürede gel.", en: "Come as soon as possible." },
+                { tr: "Kayağa gitme durumunda mont al.", en: "Take your coat in case you go skiing." },
+                { tr: "Düştüm; bu yüzden canım acıyor.", en: "I fell; therefore, I am hurt." },
+                { tr: "Kaderin bir cilvesiyle tanıştık.", en: "By a twist of fate, we met." },
+                { tr: "Uzun vadede sağlıklıdır.", en: "It is healthy in the long term." },
+                { tr: "Katiyen kumar oynamam.", en: "I don't gamble at all." },
+                { tr: "Söylentiye göre kaçmışlar.", en: "Rumour has it they escaped." },
+                { tr: "Yorgun olduğu çok bariz.", en: "It is obvious that he is tired." },
+                { tr: "Yağmura rağmen oynuyoruz.", en: "We play regardless of the rain." },
+                { tr: "İşin başında ona güvenmemeliydik.", en: "We shouldn't have trusted him in the first place." },
+                { tr: "Bitirdiğinde bana haber ver.", en: "Let me know when you finish." },
+                { tr: "Daha önce dediğim gibi, hayır.", en: "As I said before, no." },
+                { tr: "Bitirdikten sonra uyudu.", en: "Having finished, he slept." },
+                { tr: "Adından anlaşılacağı gibi, mavi.", en: "As the name suggests, it is blue." },
+                { tr: "Bu gürültüden bıktım.", en: "I am fed up with this noise." },
+                { tr: "Ben de kahve içeceğim.", en: "I will drink coffee as well." },
+                { tr: "Alınma ama katılmıyorum.", en: "No offense, but I disagree." },
+                { tr: "Oturmamın bir sakıncası var mı?", en: "Do you mind if I sit?" },
+                { tr: "Bunu son çare olarak kullan.", en: "Use it as a last resort." },
+                { tr: "Beni damdan düşercesine aradı.", en: "He called me out of the blue." },
+                { tr: "Ona güvenemeyiz.", en: "He is a bad man; in other words, we can't trust him." },
+                { tr: "O bardağı taşıran son damlaydı.", en: "That was the tipping point." },
+                { tr: "Biletleri peşinen ödeyin.", en: "Pay for the tickets in advance." },
+                { tr: "En azından bir kez dene.", en: "Try it at least once." },
+                { tr: "Madalyonun diğer yüzü: orası soğuk.", en: "We will live abroad, but the coin has a flipside: it is cold there." },
+                { tr: "Bilseydim yardım ederdim.", en: "Had I known, I would have helped." },
+                { tr: "Türkiye'de enflasyonu öğrenmelisin.", en: "You have to learn about inflation as long as you stay in Turkey." },
+                { tr: "Beni yanlış anlama.", en: "Don't get me wrong, but I like it." },
+                { tr: "Çıkmak üzereyim.", en: "I am about to leave." },
+                { tr: "Allah'tan güvendeyiz.", en: "Fortunately, we are safe." },
+                { tr: "30 dakikamı alıyor.", en: "It takes me 30 minutes to wash the car." },
+                { tr: "Öte yandan, ucuz.", en: "On the other hand, it's cheap." },
+                { tr: "Aynı şey ortağım için de geçerli.", en: "The same goes for my partner." },
+                { tr: "Senin aksine hızlı koşarım.", en: "Unlike you, I run fast." },
+                { tr: "Davet edilmedikçe girme.", en: "Don't enter unless you are invited." },
+                { tr: "Düştü ama yine de gülümsedi.", en: "He fell, yet he smiled." },
+                { tr: "Ekonomi bir kısır döngü.", en: "The Turkish economy is a vicious circle." },
+                { tr: "Ortalama olarak hava sıcak.", en: "On average, it is warm." },
+                { tr: "Gerçeklerin ışığında kazandı.", en: "Under the light of these facts, he won." },
+                { tr: "Eninde sonunda duracak.", en: "Eventually, he will stop." },
+                { tr: "Çay veya kahve, aynı hesap.", en: "Tea or coffee, same difference." },
+                { tr: "Kırk yılda bir konuşuruz.", en: "We talk once in a while." },
+                { tr: "Sözüm ona patron o.", en: "So to say, he is the boss." },
+                { tr: "Benzer şekilde katılıyorum.", en: "Similarly, I agree." }
+            ],
+            beta: [
+                { tr: "Ya kalabiliriz ya da gidebiliriz.", en: "We can either stay or go." },
+                { tr: "Kalemimi bir şekilde kaybettim.", en: "Somehow, I lost my pen." },
+                { tr: "Bardağı kasten kırdı.", en: "He broke the cup on purpose (intentionally, deliberately)." },
+                { tr: "Veda etmeksizin gitti.", en: "She left without saying goodbye." },
+                { tr: "Artık yemek yeme zamanı.", en: "Now it is time to eat." },
+                { tr: "Hiç ayı gördün mü?", en: "Did you ever see a bear?" },
+                { tr: "Barıştan başka hiçbir şey istemiyorum.", en: "I want nothing but peace." },
+                { tr: "O benim kadar uzun.", en: "He is as tall as me." },
+                { tr: "Karşılık olarak ona bir kitap verdim.", en: "I gave him a book in return." },
+                { tr: "Hem kedileri hem de köpekleri severim.", en: "I like both cats and dogs." },
+                { tr: "Tesadüfen aynı gömleği giydik.", en: "We coincidentally (by chance) wore the same shirt." },
+                { tr: "Bir dereceye kadar katılıyorum.", en: "I agree to some extent." },
+                { tr: "Kar yağsa bile gideceğim.", en: "I will go even if it snows." },
+                { tr: "Yağmur yağdı; sonuç olarak evde kaldık.", en: "It rained; consequently (as a result), we stayed home." },
+                { tr: "O aç değil, ben de değilim.", en: "She is not hungry, and neither am I." },
+                { tr: "Ailem adına konuşuyorum.", en: "I speak on behalf of my family." },
+                { tr: "Beni tanıyormuş gibi davrandı.", en: "He acted as if he knew me." },
+                { tr: "Onu son zamanlarda gördüm.", en: "I saw him recently (currently, lately)." },
+                { tr: "Yangın durumunda merdivenleri kullanın.", en: "Use the stairs in case of fire." },
+                { tr: "Haberlere göre yağmur yağacak.", en: "According to the news, it will rain." },
+                { tr: "Toplantıyı göz önünde bulundurarak bir e-posta gönderdim.", en: "I sent an email regarding the meeting." },
+                { tr: "Ben yemek yapacağım; bu esnada sen dinlenebilirsin.", en: "I will cook; in the meantime (meanwhile), you can rest." },
+                { tr: "Araba güvenlik açısından iyi.", en: "The car is good in terms of safety." },
+                { tr: "Padel, tenise kıyasla kolay.", en: "Padel is easy compared to tennis." },
+                { tr: "Kasabayı temelli terk ettiler.", en: "They left the town for good." },
+                { tr: "Aslına bakarsan kışı severim.", en: "As a matter of fact (in fact, actually), I like winter." },
+                { tr: "O kadar hızlı koştu ki kazandı.", en: "He ran so fast that he won." },
+                { tr: "Maalesef cüzdanımı kaybettim.", en: "Unfortunately, I lost my wallet." },
+                { tr: "Keşke bir arabam olsaydı!", en: "If only I had a car!" },
+                { tr: "Kola yerine su içeceğim.", en: "I will drink water instead of soda." },
+                { tr: "Bu şekilde zaman kazanabiliriz.", en: "In this way, we can save time." },
+                { tr: "Bunu sağlığın uğruna yap.", en: "Do it for the sake of your health." },
+                { tr: "Bir gerçeğe dayanarak bu soruyu sordum.", en: "I asked this question based on a fact." },
+                { tr: "Piknik havaya bağlı.", en: "The picnic depends on the weather." },
+                { tr: "Dosyayı e-posta aracılığıyla gönder.", en: "Send the file via (through) email." },
+                { tr: "Lütfen beni masraflardan an ve an haberdar et.", en: "Please keep me posted on the expenses." },
+                { tr: "Doktor sırasıyla idrar ve kan tahlili istedi.", en: "The doctor requested urine and blood tests, respectively." },
+                { tr: "Son kelime bir dil sürçmesiydi.", en: "The last word was a slip of the tongue." },
+                { tr: "İşte o burda benim planım devreye giriyor.", en: "That's where my plan comes in." },
+                { tr: "Şu andan itibaren çok çalışacağım.", en: "From now on, I will study hard." },
+                { tr: "İlkini ikincisine tercih ederim.", en: "I prefer the former over the latter." },
+                { tr: "Artık burada olduğuna göre başlayabiliriz.", en: "Now that you are here, we can start." },
+                { tr: "O filmi zaten izledim.", en: "I already saw that movie." },
+                { tr: "Hava soğuk; üstelik yağmur yağıyor.", en: "It is cold; moreover (what's more, furthermore, in addition, besides), it is raining." },
+                { tr: "Mademki hava soğuk, ateş yakmalıyız.", en: "Seeing that the weather is cold, we should burn fire." },
+                { tr: "Zengin olduğunu kim tahmin ederdi?", en: "Who would guess he was rich?" },
+                { tr: "Yardımın sayesinde kazandık.", en: "We won thanks to your help." },
+                { tr: "Bugün kar yağma ihtimali yüksek.", en: "It is likely to snow today." },
+                { tr: "Doktor olarak konuşmuyordu.", en: "He was not speaking as a doctor." },
+                { tr: "Yorgun değilim; bilakis harika hissediyorum.", en: "I am not tired; on the contrary, I feel great." },
+                { tr: "Meğerse o haklıymış.", en: "It turns out that he was right." },
+                { tr: "Adı dilimin ucunda.", en: "Her name is on the tip of my tongue." },
+                { tr: "Seni affediyorum, yani darılmaca yok.", en: "I forgive you, so no hard feelings." },
+                { tr: "Bırak koşmayı, yürüyemiyorum.", en: "Let alone run, I can't walk." },
+                { tr: "Bildiğim kadarıyla dükkan kapalı.", en: "As far as I know, the store is closed." },
+                { tr: "Süt kemiklerin için faydalı.", en: "Milk is beneficial for your bones." },
+                { tr: "Bu o kadar iyi bir kitaptı ki iki kez okudum.", en: "This was such a good book that I read it twice." },
+                { tr: "Öyle ya da böyle bu savaşı bitirecekler.", en: "This way or that way, they will finish this war." },
+                { tr: "Lütfen uçuştan 48 saat öncesine kadar ödeme yapın.", en: "Please make payment until 48 hours prior to the flight." },
+                { tr: "İlk bakışta test kolay görünüyordu.", en: "At first glance, the test looked easy." },
+                { tr: "Zamanla herkes yaşlanacak.", en: "In the course of time, everybody will get old." },
+                { tr: "Görüldüğü üzere mutlu.", en: "He is happy, as it seems." },
+                { tr: "Arabasını satmanın eşiğinde.", en: "He is on the verge of (brink of) selling his car." },
+                { tr: "Kısacası kötü bir gündü.", en: "In a nutshell (briefly), it was a bad day." },
+                { tr: "Bunun seninle hiçbir ilgisi yok.", en: "This has nothing to do with you." },
+                { tr: "Hangi rengi seçtiğin fark etmez.", en: "It doesn't matter what color you choose." },
+                { tr: "Araba sürmekten ziyade yürüyeceğim.", en: "I will walk rather than drive." },
+                { tr: "Araba kaşla göz arasında kayboldu.", en: "The car disappeared in the blink of an eye." },
+                { tr: "Bunun üzerine ağlamaya başladı.", en: "Upon this, she started crying." },
+                { tr: "Sağlığı pahasına çok çalıştı.", en: "He worked hard in expense of his health." },
+                { tr: "Otobüs henüz gelmedi.", en: "The bus didn't arrive yet." },
+                { tr: "Artık orada yaşamıyorum.", en: "I don't live there anymore." },
+                { tr: "Ne olursa olsun sakin kal.", en: "Whatever (no matter what) happens, stay calm." },
+                { tr: "Tıpkı babana benziyorsun.", en: "You look just like your father." },
+                { tr: "Bu arada, adın ne?", en: "By the way, what is your name?" },
+                { tr: "O sadece zeki değil, aynı zamanda komik.", en: "She is not only smart but also funny." },
+                { tr: "Ne kadar çok pratik yaparsan o kadar çok öğrenirsin.", en: "The more you practice, the more you learn." },
+                { tr: "Bir ev ne kadar büyük, o kadar iyi.", en: "A house is, the bigger it is, the better." },
+                { tr: "Ne hindi ne de balık yerim.", en: "I eat neither turkey nor fish." },
+                { tr: "Sınavın yarın olduğunu aklında tut.", en: "Keep in mind that the test is tomorrow." },
+                { tr: "Annem o zamanlar hasta değildi.", en: "My mom was not sick then." },
+                { tr: "Kahve içeriz sonra çay içeriz ya da tam tersi.", en: "We drink coffee, then we drink tea, or vice versa (the other way around)." },
+                { tr: "Derhal odanı temizle.", en: "Clean your room at once (immediately)." },
+                { tr: "O müziği seviyor, ben de.", en: "She loves music, and so do I." },
+                { tr: "Varır varmaz beni ara.", en: "Call me as soon as you arrive." },
+                { tr: "Yağmur yağması durumunda şemsiye al.", en: "Take an umbrella in case it rains." },
+                { tr: "Hastaydım; bu yüzden evde kaldım.", en: "I was sick; therefore (that's why), I stayed home." },
+                { tr: "Kaderin bir cilvesi, tekrar karşılaştık.", en: "Twist of fate; we met again." },
+                { tr: "Sağlıklı beslenmek uzun vadede iyidir.", en: "Eating healthy is good in the long term." },
+                { tr: "Katiyen yorgun değilim.", en: "I am not tired at all." },
+                { tr: "Söylentiye göre taşınmışlar.", en: "Rumour has it that they moved." },
+                { tr: "Yalan söylediği çok bariz.", en: "It is obvious that he is lying." },
+                { tr: "Havayı göz önünde bulundurmaksızın tenis oynayacağız.", en: "We will play tennis regardless of the weather." },
+                { tr: "İşin en başında oraya neden gittin?", en: "Why did you go there in the first place?" },
+                { tr: "Yardıma ihtiyacın olursa bana haber ver.", en: "Let me know if you need help." },
+                { tr: "Daha önce dediğim gibi, kurallar basit.", en: "As I said before, the rules are simple." },
+                { tr: "Akşam yemeğini bitirdikten sonra televizyon izledik.", en: "Having finished dinner, we watched TV." },
+                { tr: "Adından da anlaşılacağı gibi, mavi kuş mavidir.", en: "As the name suggests, the bluebird is blue." },
+                { tr: "Bu insanlardan bıktım.", en: "I am fed up with these people." },
+                { tr: "Ben de bir fincan çay alacağım.", en: "I will take a cup of tea as well." },
+                { tr: "Alınma ama fikrin kötü.", en: "No offense, but your idea is bad." },
+                { tr: "Buraya oturmamın bir sakıncası var mı?", en: "Do you mind if I sit here?" },
+                { tr: "Son çare olarak taksi çağracağız.", en: "We will call a taxi as a last resort." },
+                { tr: "Yağmur damdan düşercesine başladı.", en: "The rain started out of the blue." },
+                { tr: "Ağlıyordu; başka bir deyişle üzgündü.", en: "She was crying; in other words, she was sad." },
+                { tr: "İşini kaybetmesi bardağı taşıran son damlaydı.", en: "Losing his job was the tipping point." },
+                { tr: "Lütfen biletlerinizi peşinen ayırtın.", en: "Please book your tickets in advance." },
+                { tr: "En azından iki bardak su içmelisin.", en: "You should drink at least two glasses of water." },
+                { tr: "Büyük bir şehirde yaşamak eğlenceli ama madalyonun diğer yüzü de var.", en: "Living in a big city is fun, but the coin has a flipside." },
+                { tr: "Bilseydim gitmezdim.", en: "Had I known, I would not have gone." },
+                { tr: "Sessiz olduğun müddetçe oynayabilirsin.", en: "You can play as long as you are quiet." },
+                { tr: "Beni yanlış anlama, onu seviyorum.", en: "Don't get me wrong, I like him." },
+                { tr: "Tren kalkmak üzere.", en: "The train is about to leave." },
+                { tr: "Allah'tan kimse yaralanmadı.", en: "Fortunately, no one was hurt." },
+                { tr: "Keki pişirmek bir saatimi alıyor.", en: "It takes me one hour to bake the cake." },
+                { tr: "Araba eski; öte yandan ucuz.", en: "The car is old; on the other hand, it is cheap." },
+                { tr: "Okumayı seviyorum ve aynı şey kız kardeşim için de geçerli.", en: "I love reading, and the same goes for my sister." },
+                { tr: "Kedilerin aksine köpekler suyu sever.", en: "Unlike cats, dogs love water." },
+                { tr: "Ödevini bitirmedikçe dışarı çıkamazsın.", en: "You cannot go out unless you finish your homework." },
+                { tr: "Film uzundu ama yine de ilginçti.", en: "The movie was long, yet it was interesting." },
+                { tr: "Stres hastalığa neden olur ve bir kısır döngü yaratır.", en: "Stress causes illness, and it creates a vicious circle." },
+                { tr: "Ortalama olarak günde sekiz saat uyuruz.", en: "On average, we sleep eight hours a day." },
+                { tr: "Yeni kanıtların ışığında tahliye edildiı.", en: "Under the light of the new evidence, he was released." },
+                { tr: "Eninde sonunda bir iş bulacak.", en: "Eventually, he will find a job." },
+                { tr: "Sen akşam yemeğini ödüyorsun ben konseri ödüyorum. Aynı hesap.", en: "You pay the dinner, I pay the concert; same difference." },
+                { tr: "Kırk yılda bir plaja gideriz.", en: "We go to the beach once in a while (every now and then)." },
+                { tr: "Sözüm ona o evin kralı.", en: "So to say, he is the king of the house." },
+                { tr: "Sivrisinekler kan emer; benzer şekilde yarasalar da.", en: "Mosquitoes suck blood; similarly (likewise), bats." }
+            ]
+        };
 
+        // State variables
+        let activeCore = 'alpha'; 
         let currentShuffledSet = [], retryPool = [], currentIdx = 0, score = 0, corrects = 0, totalAtts = 0, phase = 1, gameId = "";
         let isSpinning = false, countdown, timerVal = 10;
         
@@ -508,7 +655,23 @@
             return window.innerWidth <= 768 ? 280 : 380;
         }
 
-        const STORAGE_KEY = "cyberSlotMobileReady";
+        // Generate dynamic storage keys based on the active core
+        function getStorageKey() {
+            return "cyberSlotStats_" + activeCore;
+        }
+
+        // Switch between Alpha and Beta cores
+        function switchCore(coreName) {
+            activeCore = coreName;
+            
+            // Update Toggle UI
+            document.getElementById('core-alpha-btn').classList.remove('active');
+            document.getElementById('core-beta-btn').classList.remove('active');
+            document.getElementById('core-' + coreName + '-btn').classList.add('active');
+            
+            // Refresh the lobby to show the scores for the newly selected core
+            updateLobby();
+        }
 
         function createLobby() {
             const grid = document.getElementById('studio-grid');
@@ -529,14 +692,18 @@
         }
 
         function updateLobby() {
-            const progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            const progress = JSON.parse(localStorage.getItem(getStorageKey())) || {};
             for(let i=1; i<=8; i++) {
                 const id = 'g'+i;
                 const badge = document.getElementById('badge-'+id);
-                if(progress[id] && badge) {
-                    badge.classList.add('visible');
-                    document.getElementById('score-'+id).innerText = progress[id].score;
-                    document.getElementById('percent-'+id).innerText = progress[id].percent;
+                if(badge) {
+                    if(progress[id]) {
+                        badge.classList.add('visible');
+                        document.getElementById('score-'+id).innerText = progress[id].score;
+                        document.getElementById('percent-'+id).innerText = progress[id].percent;
+                    } else {
+                        badge.classList.remove('visible');
+                    }
                 }
             }
         }
@@ -545,7 +712,7 @@
             gameId = id;
             const studioNum = parseInt(id.slice(1));
             const start = (studioNum - 1) * 16;
-            const originalSet = rawData.slice(start, start + 16);
+            const originalSet = database[activeCore].slice(start, start + 16);
             
             currentShuffledSet = [...originalSet].sort(() => Math.random() - 0.5);
             
@@ -686,9 +853,9 @@
 
         function finishGame() {
             const perc = totalAtts > 0 ? Math.round((corrects/totalAtts)*100) : 0;
-            let progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            let progress = JSON.parse(localStorage.getItem(getStorageKey())) || {};
             progress[gameId] = { score, percent: perc };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+            localStorage.setItem(getStorageKey(), JSON.stringify(progress));
             
             const reelStrip = document.getElementById('reel-strip');
             reelStrip.innerHTML = `<div class="sentence-item"><span class="turkish-text" style="color:#39FF14">NODE SECURED.<br>ALL THREATS ELIMINATED.</span></div>`;
@@ -704,10 +871,12 @@
         }
 
         function resetProgress() { 
-            if(confirm("Tüm sistem verilerini silmek istediğine emin misin?")) { 
-                localStorage.removeItem(STORAGE_KEY); location.reload(); 
+            if(confirm("Bu veritabanına ait tüm skorları silmek istediğine emin misin?")) { 
+                localStorage.removeItem(getStorageKey()); 
+                updateLobby(); 
             } 
         }
+
     </script>
 </body>
 </html>
